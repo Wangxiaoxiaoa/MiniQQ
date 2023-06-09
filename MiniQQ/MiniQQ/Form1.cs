@@ -19,6 +19,8 @@ namespace MiniQQ
             TCPServerManager.Instance.RecAddFriendReqAction = AddFriend;
             TCPServerManager.Instance.RecLoginReqAction = Login;
             TCPServerManager.Instance.RecRefuseReqAction = Refuse;
+            TCPServerManager.Instance.RecModNameReqAction = ChangeName;
+
 
 
         }
@@ -191,6 +193,62 @@ namespace MiniQQ
 
 
             TCPServerManager.Instance.SendObjectByIP(ip, registerRsp, MsgType.MSG_TYPE_REGISTER_RSP);
+        }
+
+
+        public void ChangeName(ModNameReq modnamereq, string ip)
+        {
+            ModNameRsp modNameRsp = new ModNameRsp();
+            UserInfomations info = getAllUsersInfo();
+            Userinfo user = info.MyUserInfos.Find((u) => u.Username == modnamereq.Username);
+            if (user != null)
+            {
+                FriendInfo change_friend = user.FriendInfos.Find((u) => u.FriendName == modnamereq.FriendName);
+                if (change_friend != null)
+                {
+                    if (change_friend.Status == FriendStatus.WAIT || change_friend.Status == FriendStatus.NOREPLY)
+                    {
+                        modNameRsp.Result = false;
+                        modNameRsp.ErrorMsg = "ÐÞ¸ÄÊ§°Ü£¬ºÃÓÑÎ´Ìí¼Ó£¡";
+                        saveUsers(info);
+                        TCPServerManager.Instance.SendObjectByIP(ip, modNameRsp, MsgType.MSG_TYPE_MOD_NAME_RSP);
+                    }
+                    else
+                    {
+                        change_friend.FriendNickName = modnamereq.FriendNickName;
+                        saveUsers(info);
+
+                        modNameRsp.Result = true;
+                        modNameRsp.ErrorMsg = "ÐÞ¸ÄêÇ³Æ³É¹¦";
+                        modNameRsp.FriendName = modnamereq.FriendName;
+                        modNameRsp.Username = modnamereq.Username;
+                        modNameRsp.FriendNickName = modnamereq.FriendNickName;
+
+                        RefreshFriendListRsp refreshFriendListRsp1 = new RefreshFriendListRsp();
+                        refreshFriendListRsp1.userinfo = user;
+                        TCPServerManager.Instance.SendObjectByUserName(user.Username, refreshFriendListRsp1, MsgType.MSG_TYPE_REFRESH_FRIEND);
+                        TCPServerManager.Instance.SendObjectByIP(ip, modNameRsp, MsgType.MSG_TYPE_MOD_NAME_RSP);
+
+                    }
+
+                }
+                else
+                {
+                    modNameRsp.Result = false;
+                    modNameRsp.ErrorMsg = "ÐÞ¸ÄÊ§°Ü£¡";
+                    saveUsers(info);
+                    TCPServerManager.Instance.SendObjectByIP(ip, modNameRsp, MsgType.MSG_TYPE_MOD_NAME_RSP);
+                }
+
+            }
+            else
+            {
+                modNameRsp.Result = false;
+                modNameRsp.ErrorMsg = "ÐÞ¸ÄÊ§°Ü£¡";
+                saveUsers(info);
+                TCPServerManager.Instance.SendObjectByIP(ip, modNameRsp, MsgType.MSG_TYPE_MOD_NAME_RSP);
+
+            }
         }
 
         public Userinfo? getUserByName(string Username)

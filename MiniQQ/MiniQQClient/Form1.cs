@@ -18,6 +18,8 @@ namespace MiniQQClient
             TcpClientManager.Instance.ExceptionMsgAction = ExceptionAction;
             TcpClientManager.Instance.RecRefreshfriendListRspAction = RefreshfriendList;
             TcpClientManager.Instance.RecAddFriendRspAction = RecAddFriendRspAction;
+            TcpClientManager.Instance.RecModNameRspAction = RecModNameRspAction;
+
             resetFriendsPanel();
             System.Windows.Forms.Control.CheckForIllegalCrossThreadCalls = false;//设置该属性 为false
 
@@ -50,6 +52,37 @@ namespace MiniQQClient
             {
                 delega1();
             }
+        }
+
+        void RecModNameRspAction(ModNameRsp modnamersp)
+        {
+
+
+            Action delega1 = () =>
+            {
+                if (modnamersp.Result)
+                {
+
+                    resetFriendsPanel();
+                    MessageBox.Show(modnamersp.ErrorMsg);
+                }
+                else
+                {
+                    MessageBox.Show(modnamersp.ErrorMsg);
+                }
+            };
+
+            //使用异步多线程更新
+            if (this.InvokeRequired)
+            {
+                //新建一个线程，线程里面调用拉姆达表达式，拉姆达表达式里面使用异步的形式调用委托，委托里面再修改控件的父级
+                new Thread(() => this.Invoke(delega1)).Start();
+            }
+            else
+            {
+                delega1();
+            }
+
         }
 
         // sizuo start
@@ -88,6 +121,7 @@ namespace MiniQQClient
 
         void createFriend(FriendInfo friendInfo, FriendStatus status = FriendStatus.ONLINE)
         {
+            string nickname = friendInfo.FriendNickName;
             string name = friendInfo.FriendName;
             int length = friends.Count;
             Panel panel = new Panel();
@@ -101,9 +135,9 @@ namespace MiniQQClient
             // friendExample
             // 
             panel.BackColor = Color.Transparent;
-            panel.Location = new Point(3, 17 + 25 * (length));
+            panel.Location = new Point(5, 20 + 40 * (length));
             panel.Name = name + "_friend";
-            panel.Size = new Size(149, 22);
+            panel.Size = new Size(350 ,40);
             panel.TabIndex = 3;
             // 
             // friendExample_name
@@ -112,9 +146,9 @@ namespace MiniQQClient
             label.BackColor = Color.Transparent;
             label.Font = new Font("Microsoft YaHei UI", 10F, FontStyle.Bold, GraphicsUnit.Point);
             label.ForeColor = Color.White;
-            label.Location = new Point(29, 0);
+            label.Location = new Point(40, 0);
             label.Name = name + "_name";
-            label.Size = new Size(37, 19);
+            label.Size = new Size(300, 40);
             label.TabIndex = 1;
             label.Text = name;
             if (friendInfo.FriendNickName != null)
@@ -125,9 +159,9 @@ namespace MiniQQClient
             // friendExample_online
             // 
             pictureBox.BackColor = Color.Transparent;
-            pictureBox.Location = new Point(0, 0);
+            pictureBox.Location = new Point(5, 5);
             pictureBox.Name = name + "_status";
-            pictureBox.Size = new Size(23, 21);
+            pictureBox.Size = new Size(30, 30);
             pictureBox.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox.TabIndex = 2;
             pictureBox.TabStop = false;
@@ -138,6 +172,9 @@ namespace MiniQQClient
                 panel.Click += openChat;
                 pictureBox.Click += openChat;
                 label.Click += openChat;
+                panel.DoubleClick += (sender, e) => changeName(sender, e, name, nickname);
+                pictureBox.DoubleClick += (sender, e) => changeName(sender, e, name, nickname);
+                label.DoubleClick += (sender, e) => changeName(sender, e, name, nickname);
             }
             else if (status == FriendStatus.OFFLINE)
             {
@@ -145,6 +182,9 @@ namespace MiniQQClient
                 panel.Click += openChat;
                 pictureBox.Click += openChat;
                 label.Click += openChat;
+                panel.DoubleClick += (sender, e) => changeName(sender, e, name, nickname);
+                pictureBox.DoubleClick += (sender, e) => changeName(sender, e, name, nickname);
+                label.DoubleClick += (sender, e) => changeName(sender, e, name, nickname);
             }
             else if (status == FriendStatus.WAIT)
             {
@@ -200,6 +240,21 @@ namespace MiniQQClient
 
         }
 
+        private void changeName(object sender, EventArgs e, string name, string nickname)
+        {
+            ChangeNickName form = new ChangeNickName();
+            form.old_name.Text = name.Trim();
+            if (nickname == "" || nickname == null)
+            {
+                form.textBox1.Text = "还未设置过备注，请设置！";
+            }
+            else
+            {
+                form.textBox1.Text = nickname.Trim();
+            }
+
+            form.ShowDialog();
+        }
         private void addFriend()
         {
             FriendForm form = new FriendForm();
